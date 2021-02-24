@@ -18,6 +18,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
 
+import builtins
 import numpy as np
 from flexi_classifier import FlexiSoftmaxClassifier
 from torch.utils.tensorboard import SummaryWriter
@@ -130,6 +131,13 @@ def main_worker(gpu, ngpus_per_node, args):
     args.gpu = gpu
 
     args.writer = SummaryWriter(args.savedir)
+
+    # suppress printing if not master
+    if args.multiprocessing_distributed and args.gpu != 0:
+        def print_pass(*args):
+            pass
+
+        builtins.print = print_pass
 
     if args.gpu is not None:
         print("Use GPU: {} for training".format(args.gpu))
@@ -328,7 +336,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         flexi_target = classifier(target)
 
         loss_ce = criterion(output, target)
-        loss_ce_flexi = criterion(output, flexi_target)
+        loss_ce_flexi = xentropy(output, flexi_target)
         loss_penalty = classifier.penalty()
         loss = loss_ce_flexi + args.lambda1 * loss_penalty
 
@@ -484,6 +492,12 @@ def accuracy(output, target, topk=(1,)):
             correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
+
+
+def xentropy(y, target):
+    y = y.unsqueeze(1)
+    target = target.unsqueeze(1)
+    return -torch.mean(torch.bmm(target, torch.log(y).permute(0, 2, 1)))
 
 
 if __name__ == '__main__':

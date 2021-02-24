@@ -7,6 +7,7 @@ import torch.nn.functional as F
 class FlexiSoftmaxClassifier(nn.Module):
     def __init__(self, N):
         super(FlexiSoftmaxClassifier, self).__init__()
+        self.N = N
         self.R_ = nn.Parameter(torch.randn(N, N))  # torch.cuda.FloatTensor(N, N))
         # nn.init.xavier_uniform(self.R_)
         self.I = torch.eye(N)
@@ -17,6 +18,8 @@ class FlexiSoftmaxClassifier(nn.Module):
         self.R = torch.matmul(self.R_, self.R_.permute(1, 0))
         print("l: ", l.shape)
         print("R: ", self.R.shape)
+        loh = torch.zeros(l.shape[0], self.N).to(l.device)
+        loh.scatter(1, l, 1)
         laff = torch.matmul(l, self.R.permute(1, 0))
         # ce_term = self.CE(y, laff)
         # pen_term = torch.sum((self.I - self.R) ** 2)
