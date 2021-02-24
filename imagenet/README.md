@@ -98,3 +98,16 @@ optional arguments:
                         fastest way to use PyTorch for either single node or
                         multi node data parallel training
 ```
+
+
+TODO:
+- [x] implement flexi-classifier
+- [x] add summaries for ce term, penalty term, overall loss, acc1, acc5
+- [x] save R mat every epoch
+
+- [] add flexi acc in addition to target acc
+- [] add summaries fro flexi acc
+- [] play with lambda, train schedule
+
+- [] add lambda update to increase contribution of penalty over time
+- []
