@@ -333,11 +333,11 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         output = model(images)
 
         # compute flexible target
-        flexi_target = classifier(target)
+        flexi_target, loss_penalty = classifier(target)
 
         loss_ce = criterion(output, target)
         loss_ce_flexi = xentropy(output, flexi_target)
-        loss_penalty = classifier.penalty()
+        # loss_penalty = classifier.penalty  # ()
         loss = loss_ce_flexi + args.lambda1 * loss_penalty
 
         # measure accuracy and record loss
@@ -359,6 +359,8 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         end = time.time()
 
         if i % args.print_freq == 0:
+            print("flexi target: ", flexi_target.shape)
+            print("output: ", output.shape)
             progress.display(i)
             write_mean_summaries(writer=args.writer,
                                  metrics={"loss": loss, "ce": loss_ce, "ce_flexi": loss_ce_flexi,
@@ -495,10 +497,15 @@ def accuracy(output, target, topk=(1,)):
 
 
 def xentropy(y, target):
-    y = y.unsqueeze(1)
+    y = y.unsqueeze(1) + 1e-7
     target = target.unsqueeze(1)
-    return -torch.mean(torch.bmm(target, torch.log(y).permute(0, 2, 1)))
-
+    logy = torch.log(y).permute(0, 2, 1)
+    print(target.sum())
+    print(y.sum())
+    print(logy.sum())
+    loss = -torch.mean(torch.bmm(target, logy))
+    # print(loss)
+    return loss
 
 if __name__ == '__main__':
     main()
