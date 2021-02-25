@@ -8,7 +8,7 @@ class FlexiSoftmaxClassifier(nn.Module):
     def __init__(self, N):
         super(FlexiSoftmaxClassifier, self).__init__()
         self.N = N
-        self.R = nn.Parameter(torch.randn(N, N))  # torch.eye(N)
+        self.R = nn.Parameter(-100 * torch.rand(N, N) + 1000 * torch.eye(N))
         # nn.init.xavier_uniform(self.R_)
         self.I = torch.eye(N)
         # self.CE = nn.CrossEntropyLoss()
