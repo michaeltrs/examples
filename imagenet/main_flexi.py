@@ -19,6 +19,7 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 
 import builtins
+import json
 import torch.nn.functional as F
 import numpy as np
 from flexi_classifier import FlexiSoftmaxClassifier
@@ -97,6 +98,12 @@ best_acc1 = 0
 
 def main():
     args = parser.parse_args()
+
+    if not os.path.exists(args.savedir):
+        os.makedirs(args.savedir)
+
+    with open(os.path.join(args.savedir, 'commandline_args.txt'), 'w') as f:
+        json.dump(args.__dict__, f, indent=2)
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -199,6 +206,9 @@ def main_worker(gpu, ngpus_per_node, args):
     #         model.cuda()
     #     else:
     #         model = torch.nn.DataParallel(model).cuda()
+
+    # save initial rotation matrix
+    np.savez_compressed(os.path.join(args.savedir, "Rinit.csv"), R=classifier.module.R.detach().numpy())
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
@@ -305,7 +315,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
             # save rotation matrix
             # np.savetxt(os.path.join(args.savedir, "R%d.csv" % epoch), classifier.R.detach().numpy())
-            np.savez_compressed(os.path.join(args.savedir, "R%d.csv" % epoch), R=classifier.R.detach().numpy())
+            np.savez_compressed(os.path.join(args.savedir, "R%d.csv" % epoch), R=classifier.module.R.detach().numpy())
 
 
 def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
