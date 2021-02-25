@@ -88,6 +88,9 @@ parser.add_argument('--lambda1', default=0.1, type=float, metavar='lam',
                     help='loss function penalty factor')
 parser.add_argument('--savedir', default='', type=str, metavar='PATH',
                     help='path to save directory')
+parser.add_argument('--lrR', default=0.01, type=float,
+                    metavar='LR', help='initial learning rate for R matrix', dest='lrR')
+
 
 best_acc1 = 0
 
@@ -200,11 +203,13 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    optimizer = torch.optim.SGD([{'params': model.parameters()},
-                                 {'params': classifier.parameters()}],
-                                lr=args.lr,
-                                momentum=args.momentum,
-                                weight_decay=args.weight_decay)
+    optimizer = torch.optim.SGD([
+        {'params': model.parameters()},
+        {'params': classifier.parameters(), 'lr': args.lrR}
+        ],
+        lr=args.lr,
+        momentum=args.momentum,
+        weight_decay=args.weight_decay)
     # optimizer = torch.optim.SGD(model.parameters(), args.lr,
     #                             momentum=args.momentum,
     #                             weight_decay=args.weight_decay)
@@ -339,6 +344,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         loss_ce = criterion(output, target)
         loss_ce_flexi = xentropy(output, flexi_target)
         # loss_penalty = classifier.penalty  # ()
+        # loss = loss_ce
         loss = loss_ce_flexi + args.lambda1 * loss_penalty
         # loss = loss_penalty
 
@@ -361,9 +367,9 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         end = time.time()
 
         if i % args.print_freq == 0:
-            print("flexi target: ", flexi_target.shape)
-            print("output: ", output.shape)
-            print(classifier.module.R_.grad)
+            # print("flexi target: ", flexi_target.shape)
+            # print("output: ", output.shape)
+            # print(classifier.module.R_.grad)
             progress.display(i)
             write_mean_summaries(writer=args.writer,
                                  metrics={"loss": loss, "ce": loss_ce, "ce_flexi": loss_ce_flexi,
@@ -503,10 +509,10 @@ def xentropy(y, target):
     y = F.softmax(y, dim=1).unsqueeze(1) + 1e-7
     target = target.unsqueeze(1)
     logy = torch.log(y).permute(0, 2, 1)
-    # print(target.sum())
+    Z = target.sum(dim=2).mean()
     # print(y.sum())
     # print(logy.sum())
-    loss = -torch.mean(torch.bmm(target, logy))
+    loss = -1/Z * torch.mean(torch.bmm(target, logy))
     # print(loss)
     return loss
 
