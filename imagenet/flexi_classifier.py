@@ -8,7 +8,7 @@ class FlexiSoftmaxClassifier(nn.Module):
     def __init__(self, N):
         super(FlexiSoftmaxClassifier, self).__init__()
         self.N = N
-        self.R = nn.Parameter(torch.eye(N))  # randn(N, N))  # torch.eye(N)
+        self.R = nn.Parameter(torch.randn(N, N))  # torch.eye(N)
         # nn.init.xavier_uniform(self.R_)
         self.I = torch.eye(N)
         # self.CE = nn.CrossEntropyLoss()
@@ -21,11 +21,12 @@ class FlexiSoftmaxClassifier(nn.Module):
         # print("l: ", l.shape)
         # print("R: ", self.R.shape)
         # print("R: ", self.R.sum(dim=1).mean(), self.R.sum(dim=0).mean())
+        R = F.sigmoid(self.R)
         loh = torch.zeros(l.shape[0], self.N).to(l.device)
         loh = loh.scatter(1, l.unsqueeze(-1).to(torch.int64), 1)
-        laff = torch.matmul(loh, self.R)  # .permute(1, 0))
+        laff = torch.matmul(loh, R)  # .permute(1, 0))
         # ce_term = self.CE(y, laff)
-        penalty = torch.mean((self.I.to(self.R.device) - self.R) ** 2)
+        penalty = torch.mean((self.I.to(self.R.device) - R) ** 2)
         return laff, penalty  # ce_term, pen_term, laff, self.R
 
     # def penalty(self):
