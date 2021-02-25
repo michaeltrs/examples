@@ -16,10 +16,11 @@ class FlexiSoftmaxClassifier(nn.Module):
     def forward(self, l):
         self.R_ = nn.Parameter(F.normalize(self.R_, dim=1))
         self.R = torch.matmul(self.R_, self.R_.permute(1, 0))
+        self.R = F.softmax(self.R, dim=1)
         # print("l: ", l.shape)
         # print("R: ", self.R.shape)
         loh = torch.zeros(l.shape[0], self.N).to(l.device)
-        loh.scatter(1, l.unsqueeze(-1).to(torch.int64), 1)
+        loh = loh.scatter(1, l.unsqueeze(-1).to(torch.int64), 1)
         laff = torch.matmul(loh, self.R.permute(1, 0))
         # ce_term = self.CE(y, laff)
         penalty = torch.sum((self.I.to(self.R.device) - self.R) ** 2)

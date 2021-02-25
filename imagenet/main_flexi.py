@@ -19,6 +19,7 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 
 import builtins
+import torch.nn.functional as F
 import numpy as np
 from flexi_classifier import FlexiSoftmaxClassifier
 from torch.utils.tensorboard import SummaryWriter
@@ -497,7 +498,7 @@ def accuracy(output, target, topk=(1,)):
 
 
 def xentropy(y, target):
-    y = y.unsqueeze(1) + 1e-7
+    y = F.softmax(y, dim=1).unsqueeze(1)
     target = target.unsqueeze(1)
     logy = torch.log(y).permute(0, 2, 1)
     print(target.sum())

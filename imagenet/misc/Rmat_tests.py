@@ -32,7 +32,7 @@ import matplotlib.pyplot as plt
 
 N = 1000
 a = 1000
-w = Variable(torch.rand(N, a, requires_grad=True), requires_grad=True)
+w = Variable(torch.randn(N, a, requires_grad=True), requires_grad=True)
 
 I = torch.eye(N)
 
