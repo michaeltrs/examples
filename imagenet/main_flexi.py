@@ -340,12 +340,13 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         loss_ce_flexi = xentropy(output, flexi_target)
         # loss_penalty = classifier.penalty  # ()
         loss = loss_ce_flexi + args.lambda1 * loss_penalty
+        # loss = loss_penalty
 
         # measure accuracy and record loss
         acc1, acc5 = accuracy(output, target, topk=(1, 5))
         losses.update(loss.item(), images.size(0))
-        losses_ce.update(loss_ce.item(), images.size(0))
-        losses_ce_flexi.update(loss_ce_flexi.item(), images.size(0))
+        losses_ce.update(loss_ce.item(), images.size(0))              
+        losses_ce_flexi.update(loss_ce_flexi.item(), images.size(0))  
         losses_penalty.update(loss_penalty.item(), images.size(0))
         top1.update(acc1[0], images.size(0))
         top5.update(acc5[0], images.size(0))
@@ -362,6 +363,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         if i % args.print_freq == 0:
             print("flexi target: ", flexi_target.shape)
             print("output: ", output.shape)
+            print(classifier.module.R_.grad)
             progress.display(i)
             write_mean_summaries(writer=args.writer,
                                  metrics={"loss": loss, "ce": loss_ce, "ce_flexi": loss_ce_flexi,
@@ -498,12 +500,12 @@ def accuracy(output, target, topk=(1,)):
 
 
 def xentropy(y, target):
-    y = F.softmax(y, dim=1).unsqueeze(1)
+    y = F.softmax(y, dim=1).unsqueeze(1) + 1e-7
     target = target.unsqueeze(1)
     logy = torch.log(y).permute(0, 2, 1)
-    print(target.sum())
-    print(y.sum())
-    print(logy.sum())
+    # print(target.sum())
+    # print(y.sum())
+    # print(logy.sum())
     loss = -torch.mean(torch.bmm(target, logy))
     # print(loss)
     return loss
