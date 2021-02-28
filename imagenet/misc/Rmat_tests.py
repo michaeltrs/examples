@@ -53,3 +53,27 @@ for i in range(1000):
 
 plt.plot(losses)
 plt.show()
+
+
+
+
+N = 1000
+a = 1000
+R = Variable(torch.randn(N, a, requires_grad=True), requires_grad=True)
+
+I = torch.eye(N)
+lambda1 = 5
+
+optimizer = optim.SGD([R], lr=0.1, momentum=0.9)
+
+losses = []
+for i in range(100000):
+    if i % 500 == 0:
+        lambda1 *= 2
+    optimizer.zero_grad()
+    Rs = R  # nn.functional.softmax(R, dim=1)
+    loss = lambda1 * torch.mean((I - Rs) ** 2)
+    print(i, lambda1, loss / lambda1)
+    loss.backward(retain_graph=True)
+    # run optimizer
+    optimizer.step()

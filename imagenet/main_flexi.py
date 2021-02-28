@@ -213,16 +213,19 @@ def main_worker(gpu, ngpus_per_node, args):
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
 
-    optimizer = torch.optim.SGD([
-        {'params': model.parameters()},
-        {'params': classifier.parameters(), 'lr': args.lrR}
-        ],
-        lr=args.lr,
-        momentum=args.momentum,
-        weight_decay=args.weight_decay)
-    # optimizer = torch.optim.SGD(model.parameters(), args.lr,
-    #                             momentum=args.momentum,
-    #                             weight_decay=args.weight_decay)
+    # optimizer = torch.optim.SGD([
+    #     {'params': model.parameters()},
+    #     {'params': classifier.parameters(), 'lr': args.lrR}
+    #     ],
+    #     lr=args.lr,
+    #     momentum=args.momentum,
+    #     weight_decay=args.weight_decay)
+    optimizer = torch.optim.SGD(model.parameters(), args.lr,
+                                momentum=args.momentum,
+                                weight_decay=args.weight_decay)
+
+    optimizerR = torch.optim.SGD(classifier.parameters(), args.lrR,
+                                momentum=args.momentum)
 
     # optionally resume from a checkpoint
     if args.resume:
@@ -291,6 +294,7 @@ def main_worker(gpu, ngpus_per_node, args):
         if args.distributed:
             train_sampler.set_epoch(epoch)
         adjust_learning_rate(optimizer, epoch, args)
+        adjust_learning_rate(optimizerR, epoch, args)
 
         # train for one epoch
         train(train_loader, model, classifier, criterion, optimizer, epoch, args)
@@ -311,7 +315,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 'classifier_dict': classifier.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer' : optimizer.state_dict(),
-            }, is_best)
+            }, is_best, filename=os.path.join(args.savedir, 'checkpoint.pth.tar'))
 
             # save rotation matrix
             # np.savetxt(os.path.join(args.savedir, "R%d.csv" % epoch), classifier.R.detach().numpy())
@@ -331,6 +335,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         len(train_loader),
         [batch_time, data_time, losses, losses_ce, losses_ce_flexi, losses_penalty, top1, top5],
         prefix="Epoch: [{}]".format(epoch))
+    lambda1 = adjust_lambda(epoch, args)
 
     # switch to train mode
     model.train()
@@ -355,7 +360,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
         loss_ce_flexi = xentropy(output, flexi_target)
         # loss_penalty = classifier.penalty  # ()
         # loss = loss_ce
-        loss = loss_ce_flexi + args.lambda1 * loss_penalty
+        loss = loss_ce_flexi + lambda1 * loss_penalty
         # loss = loss_penalty
 
         # measure accuracy and record loss
@@ -383,8 +388,8 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
             progress.display(i)
             write_mean_summaries(writer=args.writer,
                                  metrics={"loss": loss, "ce": loss_ce, "ce_flexi": loss_ce_flexi,
-                                          "penalty": loss_penalty, "lambda_pen": args.lambda1,
-                                          "acc1": acc1, "acc5": acc5},
+                                          "penalty": loss_penalty, "lambda_pen": lambda1,
+                                          "acc1": acc1.val, "acc5": acc5.val},
                                  abs_step=epoch * len(train_loader) + i, mode="train", optimizer=optimizer)
 
 
@@ -438,7 +443,7 @@ def validate(val_loader, model, criterion, args, abs_step):
 
     if abs_step is not None:
         write_mean_summaries(writer=args.writer,
-                             metrics={"ce": losses_ce.avg, "acc1": acc1, "acc5": acc5},
+                             metrics={"ce": losses_ce.avg, "acc1": acc1.avg, "acc5": acc5.avg},
                              abs_step=abs_step, mode="eval")
 
     return top1.avg
@@ -447,7 +452,7 @@ def validate(val_loader, model, criterion, args, abs_step):
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, os.path.join(os.path.dirname(filename), 'model_best.pth.tar'))
 
 
 class AverageMeter(object):
@@ -496,6 +501,12 @@ def adjust_learning_rate(optimizer, epoch, args):
     lr = args.lr * (0.1 ** (epoch // 30))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+
+def adjust_lambda(epoch, args):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lambda1 =  args.lambda1 * (5 ** (epoch // 5))
+    return lambda1
 
 
 def accuracy(output, target, topk=(1,)):
