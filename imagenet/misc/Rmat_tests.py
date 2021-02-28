@@ -59,7 +59,7 @@ plt.show()
 
 N = 1000
 a = 1000
-R = Variable(torch.randn(N, a, requires_grad=True), requires_grad=True)
+R = Variable(torch.rand(N, a, requires_grad=True), requires_grad=True)
 
 I = torch.eye(N)
 lambda1 = 5

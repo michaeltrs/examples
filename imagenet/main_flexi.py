@@ -297,7 +297,7 @@ def main_worker(gpu, ngpus_per_node, args):
         adjust_learning_rate(optimizerR, epoch, args)
 
         # train for one epoch
-        train(train_loader, model, classifier, criterion, optimizer, epoch, args)
+        train(train_loader, model, classifier, criterion, [optimizer, optimizerR], epoch, args)
 
         # evaluate on validation set
         acc1 = validate(val_loader, model, criterion, args, abs_step=epoch * len(train_loader))
@@ -322,7 +322,9 @@ def main_worker(gpu, ngpus_per_node, args):
             np.savez_compressed(os.path.join(args.savedir, "R%d.csv" % epoch), R=classifier.module.R.detach().cpu().numpy())
 
 
-def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
+def train(train_loader, model, classifier, criterion, optimizers, epoch, args):
+    optimizer, optimizerR = optimizers
+
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
@@ -374,8 +376,11 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
+        optimizerR.zero_grad()
+
         loss.backward()
         optimizer.step()
+        optimizerR.step()
 
         # measure elapsed time
         batch_time.update(time.time() - end)
