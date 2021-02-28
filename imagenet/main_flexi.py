@@ -208,7 +208,7 @@ def main_worker(gpu, ngpus_per_node, args):
     #         model = torch.nn.DataParallel(model).cuda()
 
     # save initial rotation matrix
-    np.savez_compressed(os.path.join(args.savedir, "Rinit.csv"), R=classifier.module.R.detach().numpy())
+    np.savez_compressed(os.path.join(args.savedir, "Rinit.csv"), R=classifier.module.R.detach().cpu().numpy())
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss().cuda(args.gpu)
@@ -315,7 +315,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
             # save rotation matrix
             # np.savetxt(os.path.join(args.savedir, "R%d.csv" % epoch), classifier.R.detach().numpy())
-            np.savez_compressed(os.path.join(args.savedir, "R%d.csv" % epoch), R=classifier.module.R.detach().numpy())
+            np.savez_compressed(os.path.join(args.savedir, "R%d.csv" % epoch), R=classifier.module.R.detach().cpu().numpy())
 
 
 def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
