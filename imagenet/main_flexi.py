@@ -389,7 +389,7 @@ def train(train_loader, model, classifier, criterion, optimizer, epoch, args):
             write_mean_summaries(writer=args.writer,
                                  metrics={"loss": loss, "ce": loss_ce, "ce_flexi": loss_ce_flexi,
                                           "penalty": loss_penalty, "lambda_pen": lambda1,
-                                          "acc1": acc1.val, "acc5": acc5.val},
+                                          "acc1": acc1, "acc5": acc5},
                                  abs_step=epoch * len(train_loader) + i, mode="train", optimizer=optimizer)
 
 
