@@ -362,7 +362,7 @@ def train(train_loader, model, classifier, criterion, optimizers, epoch, args):
         loss_ce_flexi = xentropy(output, flexi_target)
         # loss_penalty = classifier.penalty  # ()
         # loss = loss_ce
-        loss = loss_ce_flexi + lambda1 * loss_penalty
+        loss = loss_ce + loss_ce_flexi + lambda1 * loss_penalty
         # loss = loss_penalty
 
         # measure accuracy and record loss
@@ -448,7 +448,7 @@ def validate(val_loader, model, criterion, args, abs_step):
 
     if abs_step is not None:
         write_mean_summaries(writer=args.writer,
-                             metrics={"ce": losses_ce.avg, "acc1": acc1.avg, "acc5": acc5.avg},
+                             metrics={"ce": losses_ce.avg, "acc1": top1.avg, "acc5": top5.avg},
                              abs_step=abs_step, mode="eval")
 
     return top1.avg
@@ -510,7 +510,7 @@ def adjust_learning_rate(optimizer, epoch, args):
 
 def adjust_lambda(epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lambda1 =  args.lambda1 * (5 ** (epoch // 5))
+    lambda1 =  args.lambda1 * (2 ** (epoch // 2))
     return lambda1
 
 
