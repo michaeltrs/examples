@@ -362,7 +362,7 @@ def train(train_loader, model, classifier, criterion, optimizers, epoch, args):
         loss_ce_flexi = xentropy(output, flexi_target)
         # loss_penalty = classifier.penalty  # ()
         # loss = loss_ce
-        loss = loss_ce + loss_ce_flexi + lambda1 * loss_penalty
+        loss = loss_ce_flexi + lambda1 * loss_penalty
         # loss = loss_penalty
 
         # measure accuracy and record loss
