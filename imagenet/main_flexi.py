@@ -293,8 +293,8 @@ def main_worker(gpu, ngpus_per_node, args):
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
-        adjust_learning_rate(optimizer, epoch, args)
-        adjust_learning_rate(optimizerR, epoch, args)
+        adjust_model_learning_rate(optimizer, epoch, args)
+        adjust_classifier_learning_rate(optimizerR, epoch, args)
 
         # train for one epoch
         train(train_loader, model, classifier, criterion, [optimizer, optimizerR], epoch, args)
@@ -501,9 +501,16 @@ class ProgressMeter(object):
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
 
 
-def adjust_learning_rate(optimizer, epoch, args):
+def adjust_model_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     lr = args.lr * (0.1 ** (epoch // 30))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+
+def adjust_classifier_learning_rate(optimizer, epoch, args):
+    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
+    lr = args.lrR * (0.1 ** (epoch // 30))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
