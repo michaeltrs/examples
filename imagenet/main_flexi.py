@@ -532,7 +532,7 @@ def accuracy(output, target, topk=(1,)):
 
 
 def xentropy(y, target):
-    y = F.softmax(y, dim=1).unsqueeze(1) + 1e-7
+    y = F.softmax(y, dim=1).unsqueeze(1) + 1e-11
     target = target.unsqueeze(1)
     logy = torch.log(y).permute(0, 2, 1)
     Z = target.sum(dim=2).mean()
